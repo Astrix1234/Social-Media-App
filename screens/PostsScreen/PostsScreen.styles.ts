@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     height: 60,
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "gray",
+    backgroundColor: "#BDBDBD",
     marginRight: 8,
   },
   login: {

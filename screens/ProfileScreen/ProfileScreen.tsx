@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, ImageBackground, TouchableOpacity } from "react-native";
 import { styles } from "./ProfileScreen.styles";
 import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";

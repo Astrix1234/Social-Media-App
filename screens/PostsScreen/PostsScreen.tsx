@@ -24,8 +24,8 @@ export const PostsScreen = () => {
           <Feather
             name="log-out"
             size={30}
-            color="#FF6C00"
-            style={{ marginRight: 15 }}
+            color="#BDBDBD"
+            style={{ marginRight: 16 }}
           />
         </TouchableOpacity>
       ),

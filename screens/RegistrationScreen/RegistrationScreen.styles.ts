@@ -99,7 +99,7 @@ export const styles = StyleSheet.create({
   },
   btn: {
     marginTop: 27,
-    width: 343,
+    width: "100%",
     padding: 16,
     backgroundColor: "#FF6C00",
     borderRadius: 100,
@@ -116,6 +116,8 @@ export const styles = StyleSheet.create({
   },
   btnContainer: {
     alignItems: "center",
+    paddingRight: 16,
+    paddingLeft: 16,
   },
   btnSignInContainer: {
     alignItems: "center",

@@ -18,7 +18,7 @@ export const MainTabNavigator = () => {
 
           if (route.name === "Posts") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "CreatePosts") {
+          } else if (route.name === "Create Posts") {
             iconName = focused ? "add-circle" : "add-circle-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
@@ -30,10 +30,11 @@ export const MainTabNavigator = () => {
         },
         tabBarActiveTintColor: "#FF6C00",
         tabBarInactiveTintColor: "gray",
+        tabBarHideOnKeyboard: true,
       })}
     >
       <Tab.Screen name="Posts" component={PostsScreen} />
-      <Tab.Screen name="CreatePosts" component={CreatePostsScreen} />
+      <Tab.Screen name="Create Posts" component={CreatePostsScreen} />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

@@ -184,7 +184,6 @@ export const RegistrationScreen = () => {
                   <Text style={styles.btnText}>Registration</Text>
                 </TouchableOpacity>
               </View>
-
               <View style={styles.btnSignInContainer}>
                 <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                   <Text style={styles.btnSignInText}>

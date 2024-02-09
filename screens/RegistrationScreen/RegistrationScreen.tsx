@@ -19,12 +19,13 @@ import { validationSchema } from "./validationSchema";
 import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
 import * as ImagePicker from "expo-image-picker";
+import { useAppContext } from "../../components/AppContextProvider";
 
 type loginScreenProp = StackNavigationProp<RootStackParamList, "Login">;
 
 export const RegistrationScreen = () => {
   const navigation = useNavigation<loginScreenProp>();
-
+  const { registerUser } = useAppContext();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordShown, setPasswordShown] = useState(false);
   const [image, setImage] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export const RegistrationScreen = () => {
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
+      handleRegistration(values.email, values.password);
       console.log(values);
     },
   });
@@ -49,9 +51,12 @@ export const RegistrationScreen = () => {
     setPasswordShown(!passwordShown);
   };
 
-  const handleRegistration = () => {
-    navigation.navigate("Home");
-    console.log("Pressed");
+  const handleRegistration = async (email: string, password: string) => {
+    try {
+      await registerUser({ email, password });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const pickImage = async () => {
@@ -61,8 +66,6 @@ export const RegistrationScreen = () => {
       aspect: [4, 3],
       quality: 1,
     });
-
-    console.log(result);
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
@@ -176,7 +179,7 @@ export const RegistrationScreen = () => {
                     styles.btn,
                     !(formik.isValid && formik.dirty) && styles.disabledBtn,
                   ]}
-                  onPress={handleRegistration}
+                  onPress={() => formik.handleSubmit()}
                   disabled={!(formik.isValid && formik.dirty)}
                 >
                   <Text style={styles.btnText}>Registration</Text>

@@ -17,12 +17,13 @@ import { useFormik } from "formik";
 import { validationSchema } from "./validationSchema";
 import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useAppContext } from "../../components/AppContextProvider";
 
 type registerScreenProp = StackNavigationProp<RootStackParamList, "Register">;
 
 export const LoginScreen = () => {
   const navigation = useNavigation<registerScreenProp>();
-
+  const { loginUser } = useAppContext();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordShown, setPasswordShown] = useState(false);
 
@@ -33,6 +34,7 @@ export const LoginScreen = () => {
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
+      handleLogin(values.email, values.password);
       console.log(values);
     },
   });
@@ -45,9 +47,12 @@ export const LoginScreen = () => {
     setPasswordShown(!passwordShown);
   };
 
-  const handleLogin = () => {
-    navigation.navigate("Home");
-    console.log("Pressed");
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      await loginUser({ email, password });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -124,7 +129,7 @@ export const LoginScreen = () => {
                     styles.btn,
                     !(formik.isValid && formik.dirty) && styles.disabledBtn,
                   ]}
-                  onPress={handleLogin}
+                  onPress={() => formik.handleSubmit()}
                   disabled={!(formik.isValid && formik.dirty)}
                 >
                   <Text style={styles.btnText}>Sign in</Text>

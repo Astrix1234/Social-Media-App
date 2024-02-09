@@ -39,7 +39,6 @@ export const RegistrationScreen = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       handleRegistration(values.email, values.password);
-      console.log(values);
     },
   });
 

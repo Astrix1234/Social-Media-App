@@ -35,7 +35,6 @@ export const LoginScreen = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       handleLogin(values.email, values.password);
-      console.log(values);
     },
   });
 

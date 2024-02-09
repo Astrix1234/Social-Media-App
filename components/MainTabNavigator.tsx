@@ -34,7 +34,11 @@ export const MainTabNavigator = () => {
     >
       <Tab.Screen name="Posts" component={PostsScreen} />
       <Tab.Screen name="CreatePosts" component={CreatePostsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 };

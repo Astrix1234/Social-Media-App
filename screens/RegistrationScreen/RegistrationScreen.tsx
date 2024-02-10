@@ -20,12 +20,19 @@ import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
 import * as ImagePicker from "expo-image-picker";
 import { useAppContext } from "../../components/AppContextProvider";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
 
 type loginScreenProp = StackNavigationProp<RootStackParamList, "Login">;
 
 export const RegistrationScreen = () => {
   const navigation = useNavigation<loginScreenProp>();
   const { registerUser } = useAppContext();
+  const { user } = useAppContext();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordShown, setPasswordShown] = useState(false);
   const [image, setImage] = useState<string | null>(null);
@@ -35,10 +42,16 @@ export const RegistrationScreen = () => {
       login: "",
       email: "",
       password: "",
+      image: image as string | null,
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
-      handleRegistration(values.email, values.password);
+      handleRegistration(
+        values.email,
+        values.password,
+        values.image,
+        values.login
+      );
     },
   });
 
@@ -50,9 +63,19 @@ export const RegistrationScreen = () => {
     setPasswordShown(!passwordShown);
   };
 
-  const handleRegistration = async (email: string, password: string) => {
+  const handleRegistration = async (
+    email: string,
+    password: string,
+    image: string | null,
+    login: string
+  ) => {
     try {
-      await registerUser({ email, password });
+      await registerUser({
+        email,
+        password,
+        imageUri: image !== null ? image : undefined,
+        login,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -68,6 +91,7 @@ export const RegistrationScreen = () => {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      formik.setFieldValue("image", result.assets[0].uri);
     }
   };
 

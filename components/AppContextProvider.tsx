@@ -15,19 +15,33 @@ import {
   UserProfile,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+import { getFirestore, doc, updateDoc, setDoc } from "firebase/firestore";
 
 interface UserCredentials {
   email: string;
+  login: string;
   password: string;
+  imageUri?: string;
 }
 
 interface AppContextState {
   user: User | null;
   isLoading: boolean;
-  registerUser: ({ email, password }: UserCredentials) => Promise<User>;
+  registerUser: (credentials: UserCredentials) => Promise<User>;
   loginUser: ({ email, password }: UserCredentials) => Promise<User>;
   logoutUser: () => Promise<void>;
   updateUserProfile: (update: UserProfile) => Promise<User | undefined>;
+  uploadAndUpdateProfilePicture: (
+    userId: string,
+    imageUri: string
+  ) => Promise<void>;
+  uploadImageAndGetUrl: (imageUri: string, userId: string) => Promise<string>;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -54,16 +68,96 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     return () => unsubscribe();
   }, []);
 
-  const registerUser = async ({ email, password }: UserCredentials) => {
+  const uploadImageAndGetUrl = async (
+    imageUri: string,
+    userId: string
+  ): Promise<string> => {
+    try {
+      const storage = getStorage();
+      const imageRef = storageRef(storage, `profilePictures/${userId}`);
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      await uploadBytes(imageRef, blob);
+      const imageUrl = await getDownloadURL(imageRef);
+      return imageUrl;
+    } catch (error) {
+      console.error(error);
+      throw new Error("Error");
+    }
+  };
+
+  const uploadAndUpdateProfilePicture = async (
+    userId: string,
+    imageUri: string
+  ) => {
     setIsLoading(true);
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    setIsLoading(false);
-    setUser(userCredential.user);
-    return userCredential.user;
+
+    const storage = getStorage();
+    const db = getFirestore();
+    const userStorageRef = storageRef(storage, `profilePictures/${userId}`);
+    const userDocRef = doc(db, "Users", userId);
+
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const snapshot = await uploadBytes(userStorageRef, blob);
+      const photoURL = await getDownloadURL(snapshot.ref);
+
+      if (user) {
+        await updateProfile(user, { photoURL });
+      }
+      await updateDoc(userDocRef, {
+        profilePicture: photoURL,
+      });
+
+      if (user) {
+        setUser({ ...user, photoURL } as User);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerUser = async ({
+    email,
+    password,
+    imageUri,
+    login,
+  }: UserCredentials) => {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const userId = userCredential.user.uid;
+
+      let photoURL = "";
+      if (imageUri) {
+        photoURL = await uploadImageAndGetUrl(imageUri, userId);
+      }
+
+      const db = getFirestore();
+      await setDoc(doc(db, "Users", userId), {
+        email,
+        login,
+        profilePicture: photoURL,
+        createdAt: new Date(),
+      });
+
+      setUser(userCredential.user);
+      return userCredential.user;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loginUser = async ({ email, password }: UserCredentials) => {
@@ -103,6 +197,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         loginUser,
         logoutUser,
         updateUserProfile,
+        uploadImageAndGetUrl,
+        uploadAndUpdateProfilePicture,
       }}
     >
       {children}

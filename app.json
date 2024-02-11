@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.Astrix.Social-Media-App",
       "config": {
-        "googleMapsApiKey": "AIzaSyDtAekbpB6nDXRpuAlQa4CbUomtUjtHkBU"
+        "googleMapsApiKey": ""
       }
     },
     "android": {
@@ -27,7 +27,7 @@
       "package": "com.Astrix.Social-Media-App",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDtAekbpB6nDXRpuAlQa4CbUomtUjtHkBU"
+          "apiKey": ""
         }
       }
     },

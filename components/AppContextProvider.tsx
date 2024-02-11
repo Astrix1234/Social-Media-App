@@ -15,19 +15,36 @@ import {
   UserProfile,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
+import { db } from "../firebase/config";
 import {
   getStorage,
   ref as storageRef,
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
-import { getFirestore, doc, updateDoc, setDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  setDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 
 interface UserCredentials {
   email: string;
   login: string;
   password: string;
   imageUri?: string;
+}
+
+export interface UserData {
+  id: string;
+  email: string;
+  login: string;
+  profilePicture?: string;
 }
 
 interface AppContextState {
@@ -42,6 +59,7 @@ interface AppContextState {
     imageUri: string
   ) => Promise<void>;
   uploadImageAndGetUrl: (imageUri: string, userId: string) => Promise<string>;
+  getDataFromFirestore: () => Promise<UserData[]>;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -148,6 +166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         login,
         profilePicture: photoURL,
         createdAt: new Date(),
+        userId: userId,
       });
 
       setUser(userCredential.user);
@@ -188,6 +207,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     return user;
   };
 
+  const getDataFromFirestore = async (): Promise<UserData[]> => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      console.log("Brak zalogowanego użytkownika");
+      return [];
+    }
+
+    const snapshot = await getDocs(
+      query(collection(db, "Users"), where("userId", "==", uid))
+    );
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as UserData[];
+    return data;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -199,6 +235,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         updateUserProfile,
         uploadImageAndGetUrl,
         uploadAndUpdateProfilePicture,
+        getDataFromFirestore,
       }}
     >
       {children}

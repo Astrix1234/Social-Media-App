@@ -20,12 +20,6 @@ import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
 import * as ImagePicker from "expo-image-picker";
 import { useAppContext } from "../../components/AppContextProvider";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
 
 type loginScreenProp = StackNavigationProp<RootStackParamList, "Login">;
 

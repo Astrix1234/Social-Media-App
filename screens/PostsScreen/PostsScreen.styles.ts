@@ -19,6 +19,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#BDBDBD",
     marginRight: 8,
   },
+  profilePicture: {
+    width: 60,
+    height: 60,
+  },
   login: {
     fontFamily: "Roboto-Bold",
     color: "#212121",

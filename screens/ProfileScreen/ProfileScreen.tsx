@@ -1,17 +1,53 @@
-import React from "react";
-import { View, Text, ImageBackground, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ImageBackground,
+  TouchableOpacity,
+  Image,
+} from "react-native";
 import { styles } from "./ProfileScreen.styles";
 import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";
+import { useAppContext } from "../../components/AppContextProvider";
+import { UserData } from "../../components/AppContextProvider";
 
 export const ProfileScreen = () => {
+  const { getDataFromFirestore } = useAppContext();
+  const [userData, setUserData] = useState<UserData[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getDataFromFirestore();
+        setUserData(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <ImageBackground
       source={require("../../assets/images/Photo BG.png")}
       style={styles.backgroundImage}
     >
       <View style={styles.container}>
-        <View style={styles.photoContainer}></View>
-        <Text style={styles.title}>Login</Text>
+        <View style={styles.photoContainer}>
+          {userData.length > 0 && userData[0].profilePicture ? (
+            <Image
+              source={{ uri: userData[0].profilePicture }}
+              style={styles.profilePicture}
+            />
+          ) : (
+            <View style={styles.photoContainer}></View>
+          )}
+        </View>
+        {userData.length > 0 ? (
+          <Text style={styles.title}>{userData[0].login}</Text>
+        ) : (
+          <Text style={styles.title}>No data</Text>
+        )}
         <View style={styles.postContainer}>
           <View style={styles.imageContainer}></View>
           <Text style={styles.postTitle}>Title</Text>

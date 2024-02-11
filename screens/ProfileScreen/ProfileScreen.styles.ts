@@ -27,7 +27,10 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
+  profilePicture: {
+    width: 120,
+    height: 120,
+  },
   title: {
     fontFamily: "Roboto-Medium",
     fontSize: 30,

@@ -1,83 +1,73 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useLayoutEffect, useCallback } from "react";
+import { useNavigation } from "@react-navigation/native";
 import { View, TouchableOpacity, Text } from "react-native";
-import MapView, { Marker, Region, LatLng } from "react-native-maps";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "../../components/AppNavigator";
-import { StackNavigationProp } from "@react-navigation/stack";
-import * as Location from "expo-location";
+import MapView, { Marker, LatLng } from "react-native-maps";
 
-type MapScreenRouteProp = RouteProp<RootStackParamList, "MapScreen">;
+import { useAppContext } from "../../components/AppContextProvider";
 
 export const MapScreen = () => {
-  const route = useRoute<MapScreenRouteProp>();
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
-  const [location, setLocation] = useState<Region | undefined>();
+  const navigation = useNavigation();
+  const { location } = useAppContext();
+  const { setLocation } = useAppContext();
+  const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(
+    location
+      ? {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }
+      : null
+  );
 
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.error("Permission to access location was denied");
-        return;
+  const initialRegion = location
+    ? {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
       }
+    : undefined;
 
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-    })();
-  }, []);
+  const handleMapPress = useCallback(
+    (event: { nativeEvent: { coordinate: LatLng } }) => {
+      setSelectedLocation(event.nativeEvent.coordinate);
+    },
+    []
+  );
 
-  const handleMapPress = (event: { nativeEvent: { coordinate: LatLng } }) => {
-    setSelectedLocation({
-      latitude: event.nativeEvent.coordinate.latitude,
-      longitude: event.nativeEvent.coordinate.longitude,
-    });
-  };
-
-  const handleConfirmLocation = () => {
-    if (selectedLocation && route.params?.onLocationSelect) {
-      route.params.onLocationSelect(
-        `${selectedLocation.latitude}, ${selectedLocation.longitude}`
-      );
+  const handleConfirmLocation = useCallback(() => {
+    if (selectedLocation) {
+      setLocation(selectedLocation.latitude, selectedLocation.longitude);
       navigation.goBack();
     }
-  };
+  }, [selectedLocation, setLocation, navigation]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitleAlign: "center",
+      headerRight: () => (
+        <TouchableOpacity onPress={handleConfirmLocation}>
+          <Text>Confirm</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, handleConfirmLocation]);
+
+  if (!location) {
+    return null;
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <MapView
         style={{ flex: 1 }}
-        initialRegion={
-          location || {
-            latitude: 37.78825,
-            longitude: -122.4324,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }
-        }
+        initialRegion={initialRegion}
         onPress={handleMapPress}
+        showsUserLocation={true}
       >
         {selectedLocation && (
-          <Marker title="Selected location" coordinate={selectedLocation} />
+          <Marker title="Selected Location" coordinate={selectedLocation} />
         )}
       </MapView>
-      <TouchableOpacity
-        onPress={handleConfirmLocation}
-        style={{
-          position: "absolute",
-          bottom: 20,
-          alignSelf: "center",
-          backgroundColor: "white",
-          padding: 10,
-        }}
-      >
-        <Text>Confirm location</Text>
-      </TouchableOpacity>
     </View>
   );
 };

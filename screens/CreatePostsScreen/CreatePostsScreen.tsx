@@ -20,14 +20,18 @@ import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { Camera, CameraType } from "expo-camera";
 import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useAppContext } from "../../components/AppContextProvider";
 
 export const CreatePostsScreen = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
+  const navigationMap =
+    useNavigation<StackNavigationProp<RootStackParamList, "Map">>();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const cameraRef = useRef<Camera>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const { location } = useAppContext();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -35,8 +39,8 @@ export const CreatePostsScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons
             name="arrow-back"
-            size={30}
-            color="#BDBDBD"
+            size={24}
+            color="#212121"
             style={{ marginLeft: 16 }}
           />
         </TouchableOpacity>
@@ -186,10 +190,9 @@ export const CreatePostsScreen = () => {
                 <TouchableOpacity
                   style={styles.btnLocation}
                   onPress={() =>
-                    navigation.navigate("MapScreen", {
-                      onLocationSelect: (selectedLocation: string) => {
-                        formik.setFieldValue("location", selectedLocation);
-                        console.log(selectedLocation);
+                    navigationMap.navigate("Map", {
+                      onLocationSelect: (locationString: string) => {
+                        console.log(locationString);
                       },
                     })
                   }

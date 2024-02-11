@@ -13,7 +13,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Home: undefined;
-  MapScreen: {
+  Map: {
     onLocationSelect?: (location: string) => void;
   };
 };
@@ -37,7 +37,7 @@ export default function AppNavigator() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
-              name="MapScreen"
+              name="Map"
               component={MapScreen}
               options={{ headerShown: true, title: "Select a location" }}
             />

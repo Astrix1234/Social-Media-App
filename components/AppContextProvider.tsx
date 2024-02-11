@@ -32,6 +32,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import * as Location from "expo-location";
 
 interface UserCredentials {
   email: string;
@@ -47,6 +48,11 @@ export interface UserData {
   profilePicture?: string;
 }
 
+interface LocationData {
+  latitude: number;
+  longitude: number;
+}
+
 interface AppContextState {
   user: User | null;
   isLoading: boolean;
@@ -60,6 +66,8 @@ interface AppContextState {
   ) => Promise<void>;
   uploadImageAndGetUrl: (imageUri: string, userId: string) => Promise<string>;
   getDataFromFirestore: () => Promise<UserData[]>;
+  location: LocationData | null;
+  setLocation: (latitude: number, longitude: number) => void;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -77,6 +85,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [location, setLocation] = useState<LocationData | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -210,7 +219,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const getDataFromFirestore = async (): Promise<UserData[]> => {
     const uid = auth.currentUser?.uid;
     if (!uid) {
-      console.log("Brak zalogowanego użytkownika");
       return [];
     }
 
@@ -222,6 +230,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       ...doc.data(),
     })) as UserData[];
     return data;
+  };
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Permission to access location was denied");
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      const coords = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+      setLocation(coords);
+    })();
+  }, []);
+
+  const updateLocation = (latitude: number, longitude: number) => {
+    setLocation({ latitude, longitude });
   };
 
   return (
@@ -236,6 +264,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         uploadImageAndGetUrl,
         uploadAndUpdateProfilePicture,
         getDataFromFirestore,
+        location,
+        setLocation: updateLocation,
       }}
     >
       {children}

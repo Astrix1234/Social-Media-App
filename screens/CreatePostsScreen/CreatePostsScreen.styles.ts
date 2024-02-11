@@ -9,14 +9,23 @@ export const styles = StyleSheet.create({
   imageContainer: {
     width: "100%",
     height: 249,
-    backgroundColor: "#BDBDBD",
+    borderRadius: 8,
+    marginBottom: 8,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  camera: {
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
     marginBottom: 8,
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
   },
-  camera: {
+  cameraButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -24,6 +33,12 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#rgba(255, 255, 255, 0.3)",
+  },
+  toogleCameraText: {
+    color: "#rgba(255, 255, 255, 0.5)",
+    fontFamily: "Roboto-Regular",
+    fontSize: 16,
+    marginTop: 8,
   },
   editPhoto: {
     fontFamily: "Roboto-Regular",

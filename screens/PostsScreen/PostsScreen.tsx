@@ -68,8 +68,8 @@ export const PostsScreen = () => {
             </>
           ) : (
             <>
-              <Text style={styles.login}>No data</Text>
-              <Text style={styles.email}>No data</Text>
+              <Text style={styles.login}>Hello</Text>
+              <Text style={styles.email}>Hello</Text>
             </>
           )}
         </View>

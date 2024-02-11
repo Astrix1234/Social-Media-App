@@ -13,12 +13,22 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.Astrix.Social-Media-App",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDtAekbpB6nDXRpuAlQa4CbUomtUjtHkBU"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.Astrix.Social-Media-App",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDtAekbpB6nDXRpuAlQa4CbUomtUjtHkBU"
+        }
       }
     },
     "web": {

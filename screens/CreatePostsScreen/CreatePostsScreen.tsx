@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { styles } from "./CreatePostsScreen.styles";
@@ -16,10 +17,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFormik } from "formik";
 import { validationSchema } from "./validationSchema";
 import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
+import { Camera, CameraType } from "expo-camera";
+import { RootStackParamList } from "../../components/AppNavigator";
+import { StackNavigationProp } from "@react-navigation/stack";
 
 export const CreatePostsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [type, setType] = useState(CameraType.back);
+  const [permission, requestPermission] = Camera.useCameraPermissions();
+  const cameraRef = useRef<Camera>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -51,6 +59,48 @@ export const CreatePostsScreen = () => {
     setFocusedField(name);
   };
 
+  useEffect(() => {
+    (async () => {
+      if (!permission?.granted) {
+        await requestPermission();
+      }
+    })();
+  }, []);
+
+  if (!permission) {
+    return (
+      <View>
+        <Text>Please await the camera rights...</Text>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View>
+        <Text>No camera rights.</Text>
+      </View>
+    );
+  }
+
+  function toggleCameraType() {
+    setType((current) =>
+      current === CameraType.back ? CameraType.front : CameraType.back
+    );
+  }
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      try {
+        const pictureResult = await cameraRef.current.takePictureAsync();
+        console.log(pictureResult);
+        setPhotoUri(pictureResult.uri);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -63,15 +113,30 @@ export const CreatePostsScreen = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ flexGrow: 1 }}>
             <View style={styles.postContainer}>
-              <View style={styles.imageContainer}>
-                <TouchableOpacity
-                  style={styles.camera}
-                  onPress={() => console.log("press")}
-                >
-                  <MaterialIcons name="photo-camera" size={30} color="white" />
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity>
+              {photoUri ? (
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri: photoUri }} style={styles.camera} />
+                </View>
+              ) : (
+                <View style={styles.imageContainer}>
+                  <Camera ref={cameraRef} style={styles.camera} type={type}>
+                    <TouchableOpacity
+                      style={styles.cameraButton}
+                      onPress={takePicture}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={30}
+                        color="white"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={toggleCameraType}>
+                      <Text style={styles.toogleCameraText}>Flip Camera</Text>
+                    </TouchableOpacity>
+                  </Camera>
+                </View>
+              )}
+              <TouchableOpacity onPress={() => setPhotoUri(null)}>
                 <Text style={styles.editPhoto}>Edit photo</Text>
               </TouchableOpacity>
             </View>
@@ -120,7 +185,14 @@ export const CreatePostsScreen = () => {
                 )}
                 <TouchableOpacity
                   style={styles.btnLocation}
-                  onPress={() => console.log("press")}
+                  onPress={() =>
+                    navigation.navigate("MapScreen", {
+                      onLocationSelect: (selectedLocation: string) => {
+                        formik.setFieldValue("location", selectedLocation);
+                        console.log(selectedLocation);
+                      },
+                    })
+                  }
                 >
                   <FontAwesome6 name="location-dot" size={24} color="#BDBDBD" />
                 </TouchableOpacity>

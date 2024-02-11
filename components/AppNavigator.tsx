@@ -7,11 +7,15 @@ import { LoginScreen } from "../screens/LoginScreen/LoginScreen";
 import { MainTabNavigator } from "../components/MainTabNavigator";
 import { Loader } from "../components/Loader";
 import { useAppContext } from "../components/AppContextProvider";
+import { MapScreen } from "../screens/MapScreen/MapScreen";
 
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Home: undefined;
+  MapScreen: {
+    onLocationSelect?: (location: string) => void;
+  };
 };
 
 export default function AppNavigator() {
@@ -26,11 +30,18 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName={user ? "Home" : "Login"}>
         {user ? (
-          <Stack.Screen
-            name="Home"
-            component={MainTabNavigator}
-            options={{ headerShown: false }}
-          />
+          <>
+            <Stack.Screen
+              name="Home"
+              component={MainTabNavigator}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="MapScreen"
+              component={MapScreen}
+              options={{ headerShown: true, title: "Select a location" }}
+            />
+          </>
         ) : (
           <>
             <Stack.Screen

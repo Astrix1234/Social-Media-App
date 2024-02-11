@@ -46,7 +46,7 @@ export const ProfileScreen = () => {
         {userData.length > 0 ? (
           <Text style={styles.title}>{userData[0].login}</Text>
         ) : (
-          <Text style={styles.title}>No data</Text>
+          <Text style={styles.title}>Hello</Text>
         )}
         <View style={styles.postContainer}>
           <View style={styles.imageContainer}></View>

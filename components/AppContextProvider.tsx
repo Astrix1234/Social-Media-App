@@ -65,9 +65,10 @@ interface AppContextState {
     imageUri: string
   ) => Promise<void>;
   uploadImageAndGetUrl: (imageUri: string, userId: string) => Promise<string>;
-  getDataFromFirestore: () => Promise<UserData[]>;
+  userData: UserData[];
   location: LocationData | null;
   setLocation: (latitude: number, longitude: number) => void;
+  fetchAddress: (latitude: number, longitude: number) => Promise<string>;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -86,6 +87,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [location, setLocation] = useState<LocationData | null>(null);
+  const [userData, setUserData] = useState<UserData[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -204,6 +206,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     await signOut(auth);
     setUser(null);
+    setUserData([]);
     setIsLoading(false);
   };
 
@@ -216,21 +219,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     return user;
   };
 
-  const getDataFromFirestore = async (): Promise<UserData[]> => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      return [];
-    }
+  useEffect(() => {
+    const getDataFromFirestore = async () => {
+      setIsLoading(true);
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        setUserData([]);
+        setIsLoading(false);
+        return;
+      }
 
-    const snapshot = await getDocs(
-      query(collection(db, "Users"), where("userId", "==", uid))
-    );
-    const data = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as UserData[];
-    return data;
-  };
+      try {
+        const snapshot = await getDocs(
+          query(collection(db, "Users"), where("userId", "==", uid))
+        );
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as UserData[];
+        setUserData(data);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (user) {
+      getDataFromFirestore();
+    }
+  }, [user]);
 
   useEffect(() => {
     (async () => {
@@ -252,6 +269,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setLocation({ latitude, longitude });
   };
 
+  const fetchAddress = async (latitude: number, longitude: number) => {
+    try {
+      const results = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+      if (results.length > 0) {
+        const { city, country } = results[0];
+        const address = `${city ? city + ", " : ""}${country}`;
+        return address;
+      }
+    } catch (error) {
+      console.error("Error fetching address: ", error);
+    }
+    return "";
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -263,9 +297,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         updateUserProfile,
         uploadImageAndGetUrl,
         uploadAndUpdateProfilePicture,
-        getDataFromFirestore,
+        userData,
         location,
         setLocation: updateLocation,
+        fetchAddress,
       }}
     >
       {children}

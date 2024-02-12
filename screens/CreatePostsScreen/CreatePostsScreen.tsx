@@ -31,7 +31,7 @@ export const CreatePostsScreen = () => {
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const cameraRef = useRef<Camera>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const { location } = useAppContext();
+  const { location, fetchAddress } = useAppContext();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -50,6 +50,7 @@ export const CreatePostsScreen = () => {
 
   const formik = useFormik({
     initialValues: {
+      photo: "",
       title: "",
       location: "",
     },
@@ -58,6 +59,22 @@ export const CreatePostsScreen = () => {
       console.log(values);
     },
   });
+
+  useEffect(() => {
+    if (location) {
+      const setAddressField = async () => {
+        const address = await fetchAddress(
+          location.latitude,
+          location.longitude
+        );
+        if (address) {
+          formik.setFieldValue("location", address);
+        }
+      };
+
+      setAddressField();
+    }
+  }, [location]);
 
   const handleFocus = (name: string) => {
     setFocusedField(name);
@@ -99,6 +116,7 @@ export const CreatePostsScreen = () => {
         const pictureResult = await cameraRef.current.takePictureAsync();
         console.log(pictureResult);
         setPhotoUri(pictureResult.uri);
+        formik.setFieldValue("photo", pictureResult.uri);
       } catch (error) {
         console.error(error);
       }
@@ -183,6 +201,7 @@ export const CreatePostsScreen = () => {
                   onChangeText={formik.handleChange("location")}
                   onBlur={formik.handleBlur("location")}
                   onFocus={() => handleFocus("location")}
+                  editable={false}
                 />
                 {formik.touched.location && formik.errors.location && (
                   <Text style={styles.errorText}>{formik.errors.location}</Text>

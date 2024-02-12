@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { RegistrationScreen } from "../screens/RegistrationScreen/RegistrationScreen";
 import { LoginScreen } from "../screens/LoginScreen/LoginScreen";
 import { MainTabNavigator } from "../components/MainTabNavigator";
-import { Loader } from "../components/Loader";
+import { Loader } from "./Loader";
 import { useAppContext } from "../components/AppContextProvider";
 import { MapScreen } from "../screens/MapScreen/MapScreen";
 

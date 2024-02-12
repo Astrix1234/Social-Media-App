@@ -9,23 +9,9 @@ import {
 import { styles } from "./ProfileScreen.styles";
 import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";
 import { useAppContext } from "../../components/AppContextProvider";
-import { UserData } from "../../components/AppContextProvider";
 
 export const ProfileScreen = () => {
-  const { getDataFromFirestore } = useAppContext();
-  const [userData, setUserData] = useState<UserData[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getDataFromFirestore();
-        setUserData(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchData();
-  }, []);
+  const { userData } = useAppContext();
 
   return (
     <ImageBackground

@@ -26,7 +26,6 @@ type loginScreenProp = StackNavigationProp<RootStackParamList, "Login">;
 export const RegistrationScreen = () => {
   const navigation = useNavigation<loginScreenProp>();
   const { registerUser } = useAppContext();
-  const { user } = useAppContext();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordShown, setPasswordShown] = useState(false);
   const [image, setImage] = useState<string | null>(null);

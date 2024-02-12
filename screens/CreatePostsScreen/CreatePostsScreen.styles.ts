@@ -91,7 +91,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FF6C00",
     borderRadius: 100,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   disabledBtn: {
     backgroundColor: "#BDBDBD",
@@ -100,6 +100,14 @@ export const styles = StyleSheet.create({
     fontFamily: "Roboto-Regular",
     fontSize: 16,
     color: "#FFF",
+  },
+  btnClear: {
+    width: 100,
+    padding: 16,
+    backgroundColor: "#BDBDBD",
+    borderRadius: 100,
+    alignItems: "center",
+    marginBottom: 16,
   },
   btnContainer: {
     alignItems: "center",

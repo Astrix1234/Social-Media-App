@@ -21,6 +21,7 @@ import { Camera, CameraType } from "expo-camera";
 import { RootStackParamList } from "../../components/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useAppContext } from "../../components/AppContextProvider";
+import { Loader } from "../../components/Loader";
 
 export const CreatePostsScreen = () => {
   const navigation = useNavigation();
@@ -31,7 +32,11 @@ export const CreatePostsScreen = () => {
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const cameraRef = useRef<Camera>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const { location, fetchAddress } = useAppContext();
+  const { location, fetchAddress, addPostForUser, userId } = useAppContext();
+
+  if (!userId) {
+    return <Loader />;
+  }
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -56,7 +61,11 @@ export const CreatePostsScreen = () => {
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
-      console.log(values);
+      if (typeof userId === "string") {
+        handlePublishPost(userId, values.photo, values.title, values.location);
+        console.log("Post published", values);
+        handleClear();
+      }
     },
   });
 
@@ -71,7 +80,6 @@ export const CreatePostsScreen = () => {
           formik.setFieldValue("location", address);
         }
       };
-
       setAddressField();
     }
   }, [location]);
@@ -114,12 +122,34 @@ export const CreatePostsScreen = () => {
     if (cameraRef.current) {
       try {
         const pictureResult = await cameraRef.current.takePictureAsync();
-        console.log(pictureResult);
         setPhotoUri(pictureResult.uri);
         formik.setFieldValue("photo", pictureResult.uri);
       } catch (error) {
         console.error(error);
       }
+    }
+  };
+
+  const handleClear = () => {
+    setPhotoUri(null);
+    formik.resetForm();
+  };
+
+  const handlePublishPost = async (
+    userId: string | null,
+    imageUri: string,
+    title: string,
+    location: string
+  ) => {
+    if (userId === null) {
+      console.error("userId is null");
+      return;
+    }
+    try {
+      await addPostForUser(userId, imageUri, title, location);
+      console.log("Post published");
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -229,6 +259,11 @@ export const CreatePostsScreen = () => {
                   disabled={!(formik.isValid && formik.dirty)}
                 >
                   <Text style={styles.btnText}>Publish</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.btnContainer}>
+                <TouchableOpacity style={styles.btnClear} onPress={handleClear}>
+                  <Text style={styles.btnText}>Clear</Text>
                 </TouchableOpacity>
               </View>
             </View>

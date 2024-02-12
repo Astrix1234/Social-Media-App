@@ -13,6 +13,7 @@ import {
   updateProfile,
   User,
   UserProfile,
+  getAuth,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
 import { db } from "../firebase/config";
@@ -31,6 +32,8 @@ import {
   getDocs,
   query,
   where,
+  serverTimestamp,
+  addDoc,
 } from "firebase/firestore";
 import * as Location from "expo-location";
 
@@ -46,6 +49,12 @@ export interface UserData {
   email: string;
   login: string;
   profilePicture?: string;
+}
+
+export interface UserPostData {
+  imageUri: string;
+  title: string;
+  location: string;
 }
 
 interface LocationData {
@@ -65,10 +74,21 @@ interface AppContextState {
     imageUri: string
   ) => Promise<void>;
   uploadImageAndGetUrl: (imageUri: string, userId: string) => Promise<string>;
+  uploadPostImageAndGetUrl: (
+    imageUri: string,
+    userId: string
+  ) => Promise<string>;
+  userId: string | null;
   userData: UserData[];
   location: LocationData | null;
   setLocation: (latitude: number, longitude: number) => void;
   fetchAddress: (latitude: number, longitude: number) => Promise<string>;
+  addPostForUser: (
+    userId: string,
+    imageUri: string,
+    title: string,
+    location: string
+  ) => Promise<string>;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -88,6 +108,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [userData, setUserData] = useState<UserData[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -104,6 +125,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const storage = getStorage();
       const imageRef = storageRef(storage, `profilePictures/${userId}`);
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      await uploadBytes(imageRef, blob);
+      const imageUrl = await getDownloadURL(imageRef);
+      return imageUrl;
+    } catch (error) {
+      console.error(error);
+      throw new Error("Error");
+    }
+  };
+
+  const uploadPostImageAndGetUrl = async (
+    imageUri: string,
+    userId: string
+  ): Promise<string> => {
+    try {
+      const uniqueFileName = `post_${Date.now()}`;
+      const storagePath = `postPictures/${userId}/${uniqueFileName}`;
+
+      const storage = getStorage();
+      const imageRef = storageRef(storage, storagePath);
       const response = await fetch(imageUri);
       const blob = await response.blob();
 
@@ -220,6 +263,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      setUserId(user.uid);
+    }
+  }, [user]);
+
+  const addPostForUser = async (
+    userId: string,
+    imageUri: string,
+    title: string,
+    location: string
+  ): Promise<string> => {
+    try {
+      let photoURL = "";
+      if (imageUri) {
+        console.log(
+          `Adding post for user: ${userId} with imageUri: ${imageUri}`
+        );
+        photoURL = await uploadPostImageAndGetUrl(imageUri, userId);
+        console.log(`Uploaded image URL: ${photoURL}`);
+      }
+      const userPostsRef = collection(db, "Users", userId, "Posts");
+
+      const postRef = await addDoc(userPostsRef, {
+        imageUri: photoURL,
+        title,
+        location,
+        createdAt: serverTimestamp(),
+      });
+
+      console.log("Post added with ID:", postRef.id);
+      return postRef.id;
+    } catch (error) {
+      console.error("Error adding post:", error);
+      throw new Error("Failed to add post");
+    }
+  };
+
+  useEffect(() => {
     const getDataFromFirestore = async () => {
       setIsLoading(true);
       const uid = auth.currentUser?.uid;
@@ -296,7 +379,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         logoutUser,
         updateUserProfile,
         uploadImageAndGetUrl,
+        uploadPostImageAndGetUrl,
         uploadAndUpdateProfilePicture,
+        userId,
+        addPostForUser,
         userData,
         location,
         setLocation: updateLocation,

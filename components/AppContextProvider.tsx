@@ -35,6 +35,9 @@ import {
   serverTimestamp,
   addDoc,
   Timestamp,
+  getDoc,
+  deleteDoc,
+  increment,
 } from "firebase/firestore";
 import * as Location from "expo-location";
 
@@ -108,6 +111,7 @@ interface AppContextState {
   location: LocationData | null;
   setLocation: (latitude: number, longitude: number) => void;
   fetchAddress: (latitude: number, longitude: number) => Promise<string>;
+  toggleLikePost: (postId: string, userId: string) => Promise<void>;
   addPostForUser: (
     userId: string,
     imageUri: string,
@@ -116,6 +120,8 @@ interface AppContextState {
     likes: number,
     commentsNumber: number
   ) => Promise<string>;
+  scrollPosition: number;
+  setScrollPosition: (position: number) => void;
 }
 
 const AppContext = createContext<AppContextState | undefined>(undefined);
@@ -138,6 +144,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [userPosts, setUserPosts] = useState<UserPosts[]>([]);
   const [allPosts, setAllPosts] = useState<AllPosts[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [scrollPosition, setScrollPosition] = useState<number>(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -296,31 +303,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     const user = auth.currentUser;
     if (user) {
       setUserId(user.uid);
-    }
-  }, [user]);
-
-  const getUserPostsFirestore = async (uid: string | null) => {
-    setIsLoading(true);
-    try {
-      const snapshot = await getDocs(
-        query(collection(db, "Users", uid as string, "Posts"))
-      );
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as UserPosts[];
-      console.log("User Posts from Firestore: ", data);
-      setUserPosts(data);
-    } catch (error) {
-      console.error("Error fetching User Posts: ", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      getUserPostsFirestore(userId);
+      getAllPostsFirestore();
+      getUserPostsFirestore(user.uid);
     }
   }, [user]);
 
@@ -332,7 +316,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         id: doc.id,
         ...doc.data(),
       })) as AllPosts[];
-      console.log("All posts: ", posts);
+      // console.log("All posts: ", posts);
       setAllPosts(posts);
     } catch (error) {
       console.error("Error fetching all posts: ", error);
@@ -341,11 +325,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      getAllPostsFirestore();
+  const getUserPostsFirestore = async (userId: string | null) => {
+    setIsLoading(true);
+    try {
+      const postsSnapshot = await getDocs(
+        query(collection(db, "AllPosts"), where("userId", "==", userId))
+      );
+      const posts = postsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as UserPosts[];
+      // console.log("User posts: ", posts);
+      setUserPosts(posts);
+    } catch (error) {
+      console.error("Error fetching user posts: ", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user]);
+  };
+
+  const toggleLikePost = async (postId: string, userId: string) => {
+    const likeRefGlobal = doc(db, "AllPosts", postId, "Likes", userId);
+
+    try {
+      const docSnapGlobal = await getDoc(likeRefGlobal);
+      if (docSnapGlobal.exists()) {
+        await deleteDoc(likeRefGlobal);
+        await updateDoc(doc(db, "AllPosts", postId), {
+          likes: increment(-1),
+        });
+      } else {
+        await setDoc(likeRefGlobal, { userId: userId });
+        await updateDoc(doc(db, "AllPosts", postId), {
+          likes: increment(1),
+        });
+      }
+      await getAllPostsFirestore();
+      await getUserPostsFirestore(userId);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      throw error;
+    }
+  };
 
   const addPostForUser = async (
     userId: string,
@@ -364,10 +385,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         photoURL = await uploadPostImageAndGetUrl(imageUri, userId);
         console.log(`Uploaded image URL: ${photoURL}`);
       }
-      const userPostsRef = collection(db, "Users", userId, "Posts");
+
       const globalPostsRef = collection(db, "AllPosts");
 
-      const postRef = await addDoc(userPostsRef, {
+      const PostGlobalRef = await addDoc(globalPostsRef, {
         imageUri: photoURL,
         title,
         location,
@@ -376,21 +397,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId: userId,
         createdAt: serverTimestamp(),
       });
-
-      const PostGlobalRef = await addDoc(globalPostsRef, {
-        imageUri: photoURL,
-        title,
-        location,
-        likes,
-        commentsNumber,
-        createdAt: serverTimestamp(),
-      });
-
-      console.log("Post added with ID:", postRef.id);
       console.log("Global Post added with ID:", PostGlobalRef.id);
-      await getUserPostsFirestore(userId);
+
       await getAllPostsFirestore();
-      return postRef.id, PostGlobalRef.id;
+      await getUserPostsFirestore(userId);
+      return PostGlobalRef.id;
     } catch (error) {
       console.error("Error adding post:", error);
       throw new Error("Failed to add post");
@@ -415,7 +426,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           id: doc.id,
           ...doc.data(),
         })) as UserData[];
-        console.log("Data from Firestore: ", data);
+        // console.log("Data from Firestore: ", data);
         setUserData(data);
       } catch (error) {
         console.error("Error fetching data: ", error);
@@ -478,6 +489,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         uploadPostImageAndGetUrl,
         uploadAndUpdateProfilePicture,
         userId,
+        toggleLikePost,
         addPostForUser,
         userData,
         userPosts,
@@ -485,6 +497,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         location,
         setLocation: updateLocation,
         fetchAddress,
+        scrollPosition,
+        setScrollPosition,
       }}
     >
       {children}

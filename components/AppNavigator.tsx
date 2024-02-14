@@ -1,6 +1,6 @@
 import "react-native-gesture-handler";
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useState, useEffect } from "react";
+import { NavigationContainer, NavigationState } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { RegistrationScreen } from "../screens/RegistrationScreen/RegistrationScreen";
 import { LoginScreen } from "../screens/LoginScreen/LoginScreen";
@@ -20,14 +20,37 @@ export type RootStackParamList = {
 
 export default function AppNavigator() {
   const Stack = createNativeStackNavigator<RootStackParamList>();
-  const { isLoading, user } = useAppContext();
+  const { isLoading, user, setScrollPosition } = useAppContext();
+  const [navState, setNavState] = useState<NavigationState | undefined>();
+
+  const getCurrentRouteName = (
+    state: NavigationState | undefined
+  ): string | undefined => {
+    const route = state?.routes[state?.index ?? 0];
+
+    if (route?.state) {
+      return getCurrentRouteName(route.state as NavigationState | undefined);
+    }
+
+    return route?.name;
+  };
+
+  useEffect(() => {
+    const currentRouteName = getCurrentRouteName(navState);
+    if (currentRouteName) {
+      setScrollPosition(0);
+    }
+  }, [navState, setScrollPosition]);
 
   if (isLoading) {
     return <Loader />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      initialState={navState}
+      onStateChange={(state) => setNavState(state)}
+    >
       <Stack.Navigator initialRouteName={user ? "Home" : "Login"}>
         {user ? (
           <>

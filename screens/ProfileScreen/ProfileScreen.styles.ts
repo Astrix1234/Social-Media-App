@@ -26,10 +26,11 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
   },
   profilePicture: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: "100%",
   },
   title: {
     fontFamily: "Roboto-Medium",
@@ -40,9 +41,21 @@ export const styles = StyleSheet.create({
     marginBottom: 33,
     color: "#212121",
   },
+  noPosts: {
+    fontFamily: "Roboto-Regular",
+    fontSize: 16,
+    letterSpacing: 0.3,
+    textAlign: "center",
+    color: "#212121",
+  },
   postContainer: {
     paddingRight: 16,
     paddingLeft: 16,
+  },
+  createdAt: {
+    fontFamily: "Roboto-Regular",
+    color: "#212121",
+    marginBottom: 5,
   },
   imageContainer: {
     width: "100%",
@@ -50,6 +63,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "gray",
     borderRadius: 8,
     marginBottom: 8,
+    overflow: "hidden",
+  },
+  postPhoto: {
+    width: "100%",
+    height: "100%",
   },
   postTitle: {
     fontFamily: "Roboto-Medium",

@@ -1,14 +1,14 @@
 import React, { useLayoutEffect, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
+import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useAppContext } from "../../components/AppContextProvider";
 import { styles } from "./PostsScreen.styles";
-import { Loader } from "../../components/Loader";
 
 export const PostsScreen = () => {
   const navigation = useNavigation();
-  const { logoutUser, userData } = useAppContext();
+  const { logoutUser, userData, allPosts } = useAppContext();
 
   const handleLogOut = async () => {
     try {
@@ -60,6 +60,56 @@ export const PostsScreen = () => {
           )}
         </View>
       </View>
+      <ScrollView style={{ flex: 1, paddingBottom: 550, flexGrow: 1 }}>
+        {allPosts.length > 0 ? (
+          allPosts.map((post) => (
+            <View key={post.id}>
+              <Text style={styles.createdAt}>
+                {post.createdAt.toDate().toLocaleDateString("pl-PL", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: post.imageUri }}
+                  style={styles.postPhoto}
+                />
+              </View>
+              <Text style={styles.postTitle}>{post.title}</Text>
+              <View style={styles.linksContainer}>
+                <View style={styles.comLikiesContainer}>
+                  <View style={styles.comContainer}>
+                    <TouchableOpacity onPress={() => console.log("press")}>
+                      <FontAwesome name="comment" size={24} color="#FF6C00" />
+                    </TouchableOpacity>
+                    <Text style={styles.counter}>{post.commentsNumber}</Text>
+                  </View>
+                  <View style={styles.likesContainer}>
+                    <TouchableOpacity onPress={() => console.log("press")}>
+                      <AntDesign name="like2" size={24} color="#FF6C00" />
+                    </TouchableOpacity>
+                    <Text style={styles.counter}>{post.likes}</Text>
+                  </View>
+                </View>
+                <View style={styles.locationContainer}>
+                  <TouchableOpacity onPress={() => console.log("press")}>
+                    <FontAwesome6
+                      name="location-dot"
+                      size={24}
+                      color="#FF6C00"
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.place}>{post.location}</Text>
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noPosts}>No posts yet</Text>
+        )}
+      </ScrollView>
     </View>
   );
 };

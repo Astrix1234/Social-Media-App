@@ -34,6 +34,7 @@ import {
   where,
   serverTimestamp,
   addDoc,
+  Timestamp,
 } from "firebase/firestore";
 import * as Location from "expo-location";
 
@@ -49,6 +50,28 @@ export interface UserData {
   email: string;
   login: string;
   profilePicture?: string;
+}
+
+export interface UserPosts {
+  id: string;
+  userId: string;
+  imageUri: string;
+  title: string;
+  location: string;
+  likes: number;
+  commentsNumber: number;
+  createdAt: Timestamp;
+}
+
+export interface AllPosts {
+  id: string;
+  userId: string;
+  imageUri: string;
+  title: string;
+  location: string;
+  likes: number;
+  commentsNumber: number;
+  createdAt: Timestamp;
 }
 
 export interface UserPostData {
@@ -80,6 +103,8 @@ interface AppContextState {
   ) => Promise<string>;
   userId: string | null;
   userData: UserData[];
+  userPosts: UserPosts[];
+  allPosts: AllPosts[];
   location: LocationData | null;
   setLocation: (latitude: number, longitude: number) => void;
   fetchAddress: (latitude: number, longitude: number) => Promise<string>;
@@ -87,7 +112,9 @@ interface AppContextState {
     userId: string,
     imageUri: string,
     title: string,
-    location: string
+    location: string,
+    likes: number,
+    commentsNumber: number
   ) => Promise<string>;
 }
 
@@ -108,6 +135,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [userData, setUserData] = useState<UserData[]>([]);
+  const [userPosts, setUserPosts] = useState<UserPosts[]>([]);
+  const [allPosts, setAllPosts] = useState<AllPosts[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -270,11 +299,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [user]);
 
+  const getUserPostsFirestore = async (uid: string | null) => {
+    setIsLoading(true);
+    try {
+      const snapshot = await getDocs(
+        query(collection(db, "Users", uid as string, "Posts"))
+      );
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as UserPosts[];
+      console.log("User Posts from Firestore: ", data);
+      setUserPosts(data);
+    } catch (error) {
+      console.error("Error fetching User Posts: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      getUserPostsFirestore(userId);
+    }
+  }, [user]);
+
+  const getAllPostsFirestore = async () => {
+    setIsLoading(true);
+    try {
+      const postsSnapshot = await getDocs(collection(db, "AllPosts"));
+      const posts = postsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as AllPosts[];
+      console.log("All posts: ", posts);
+      setAllPosts(posts);
+    } catch (error) {
+      console.error("Error fetching all posts: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      getAllPostsFirestore();
+    }
+  }, [user]);
+
   const addPostForUser = async (
     userId: string,
     imageUri: string,
     title: string,
-    location: string
+    location: string,
+    likes: number,
+    commentsNumber: number
   ): Promise<string> => {
     try {
       let photoURL = "";
@@ -286,16 +365,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         console.log(`Uploaded image URL: ${photoURL}`);
       }
       const userPostsRef = collection(db, "Users", userId, "Posts");
+      const globalPostsRef = collection(db, "AllPosts");
 
       const postRef = await addDoc(userPostsRef, {
         imageUri: photoURL,
         title,
         location,
+        likes,
+        commentsNumber,
+        userId: userId,
+        createdAt: serverTimestamp(),
+      });
+
+      const PostGlobalRef = await addDoc(globalPostsRef, {
+        imageUri: photoURL,
+        title,
+        location,
+        likes,
+        commentsNumber,
         createdAt: serverTimestamp(),
       });
 
       console.log("Post added with ID:", postRef.id);
-      return postRef.id;
+      console.log("Global Post added with ID:", PostGlobalRef.id);
+      await getUserPostsFirestore(userId);
+      await getAllPostsFirestore();
+      return postRef.id, PostGlobalRef.id;
     } catch (error) {
       console.error("Error adding post:", error);
       throw new Error("Failed to add post");
@@ -320,6 +415,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           id: doc.id,
           ...doc.data(),
         })) as UserData[];
+        console.log("Data from Firestore: ", data);
         setUserData(data);
       } catch (error) {
         console.error("Error fetching data: ", error);
@@ -384,6 +480,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId,
         addPostForUser,
         userData,
+        userPosts,
+        allPosts,
         location,
         setLocation: updateLocation,
         fetchAddress,

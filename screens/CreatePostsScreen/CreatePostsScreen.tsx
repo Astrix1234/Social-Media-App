@@ -58,11 +58,20 @@ export const CreatePostsScreen = () => {
       photo: "",
       title: "",
       location: "",
+      likes: 0,
+      commentsNumber: 0,
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
       if (typeof userId === "string") {
-        handlePublishPost(userId, values.photo, values.title, values.location);
+        handlePublishPost(
+          userId,
+          values.photo,
+          values.title,
+          values.location,
+          values.likes,
+          values.commentsNumber
+        );
         console.log("Post published", values);
         handleClear();
       }
@@ -139,14 +148,23 @@ export const CreatePostsScreen = () => {
     userId: string | null,
     imageUri: string,
     title: string,
-    location: string
+    location: string,
+    likes: number,
+    commentsNumber: number
   ) => {
     if (userId === null) {
       console.error("userId is null");
       return;
     }
     try {
-      await addPostForUser(userId, imageUri, title, location);
+      await addPostForUser(
+        userId,
+        imageUri,
+        title,
+        location,
+        likes,
+        commentsNumber
+      );
       console.log("Post published");
     } catch (error) {
       console.error(error);

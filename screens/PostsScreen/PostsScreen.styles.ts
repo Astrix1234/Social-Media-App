@@ -9,6 +9,7 @@ export const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     marginTop: 32,
+    marginBottom: 32,
     alignItems: "center",
   },
   containerImage: {
@@ -32,5 +33,75 @@ export const styles = StyleSheet.create({
     fontFamily: "Roboto-Regular",
     color: "#rgba(33, 33, 33, 0.80)",
     fontSize: 11,
+  },
+  noPosts: {
+    fontFamily: "Roboto-Regular",
+    fontSize: 16,
+    letterSpacing: 0.3,
+    textAlign: "center",
+    color: "#212121",
+  },
+  createdAt: {
+    fontFamily: "Roboto-Regular",
+    color: "#212121",
+    marginBottom: 5,
+  },
+  imageContainer: {
+    width: "100%",
+    height: 249,
+    backgroundColor: "gray",
+    borderRadius: 8,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  postPhoto: {
+    width: "100%",
+    height: "100%",
+  },
+  postTitle: {
+    fontFamily: "Roboto-Medium",
+    color: "#212121",
+    fontSize: 16,
+  },
+  linksContainer: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 35,
+    marginTop: 10,
+  },
+  comLikiesContainer: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  comContainer: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  likesContainer: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 24,
+  },
+  locationContainer: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  counter: {
+    marginLeft: 6,
+    fontFamily: "Roboto-Regular",
+    color: "#212121",
+    fontSize: 16,
+  },
+  place: {
+    marginLeft: 6,
+    fontFamily: "Roboto-Regular",
+    color: "#212121",
+    fontSize: 16,
   },
 });

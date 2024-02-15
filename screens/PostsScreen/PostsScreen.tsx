@@ -7,15 +7,22 @@ import {
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  Linking,
 } from "react-native";
 import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { useAppContext } from "../../components/AppContextProvider";
+import { RootStackParamList } from "../../components/AppNavigator";
 import { styles } from "./PostsScreen.styles";
+
+type commentsScreenProp = StackNavigationProp<RootStackParamList, "Comments">;
 
 export const PostsScreen = () => {
   const navigation = useNavigation();
+  const navigationComments = useNavigation<commentsScreenProp>();
 
   const {
     logoutUser,
@@ -48,6 +55,37 @@ export const PostsScreen = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handlePressDelete = () => {
+    Alert.alert(
+      "Confirmation",
+      "Are you sure you want to delete?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Deletion cancelled"),
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: () => console.log("Deleted"),
+          style: "destructive",
+        },
+      ],
+      {
+        cancelable: true,
+      }
+    );
+  };
+
+  const openGoogleMaps = (location: string) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      location
+    )}`;
+    Linking.openURL(url).catch((err) =>
+      console.error("Couldn't load page", err)
+    );
   };
 
   useLayoutEffect(() => {
@@ -131,7 +169,13 @@ export const PostsScreen = () => {
                 <View style={styles.linksContainer}>
                   <View style={styles.comLikiesContainer}>
                     <View style={styles.comContainer}>
-                      <TouchableOpacity onPress={() => console.log("press")}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigationComments.navigate("Comments", {
+                            postId: post.id,
+                          })
+                        }
+                      >
                         <FontAwesome name="comment" size={24} color="#FF6C00" />
                       </TouchableOpacity>
                       <Text style={styles.counter}>{post.commentsNumber}</Text>
@@ -146,16 +190,26 @@ export const PostsScreen = () => {
                       </TouchableOpacity>
                       <Text style={styles.counter}>{post.likes}</Text>
                     </View>
+                    {userId === post.userId && (
+                      <TouchableOpacity
+                        style={{ marginLeft: 26 }}
+                        onPress={handlePressDelete}
+                      >
+                        <FontAwesome name="trash" size={24} color="#FF6C00" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                   <View style={styles.locationContainer}>
-                    <TouchableOpacity onPress={() => console.log("press")}>
-                      <FontAwesome6
-                        name="location-dot"
-                        size={24}
-                        color="#FF6C00"
-                      />
+                    <FontAwesome6
+                      name="location-dot"
+                      size={24}
+                      color="#BDBDBD"
+                    />
+                    <TouchableOpacity
+                      onPress={() => openGoogleMaps(post.location)}
+                    >
+                      <Text style={styles.place}>{post.location}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.place}>{post.location}</Text>
                   </View>
                 </View>
               </View>

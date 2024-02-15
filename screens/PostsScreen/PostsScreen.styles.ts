@@ -103,5 +103,6 @@ export const styles = StyleSheet.create({
     fontFamily: "Roboto-Regular",
     color: "#212121",
     fontSize: 16,
+    textDecorationLine: "underline",
   },
 });

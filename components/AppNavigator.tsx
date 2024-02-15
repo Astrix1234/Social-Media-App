@@ -8,6 +8,7 @@ import { MainTabNavigator } from "../components/MainTabNavigator";
 import { Loader } from "./Loader";
 import { useAppContext } from "../components/AppContextProvider";
 import { MapScreen } from "../screens/MapScreen/MapScreen";
+import { CommentScreen } from "../screens/CommentsScreen/CommentsScreen";
 
 export type RootStackParamList = {
   Login: undefined;
@@ -16,6 +17,7 @@ export type RootStackParamList = {
   Map: {
     onLocationSelect?: (location: string) => void;
   };
+  Comments: { postId: string };
 };
 
 export default function AppNavigator() {
@@ -63,6 +65,11 @@ export default function AppNavigator() {
               name="Map"
               component={MapScreen}
               options={{ headerShown: true, title: "Select a location" }}
+            />
+            <Stack.Screen
+              name="Comments"
+              component={CommentScreen}
+              options={{ headerShown: true, title: "Comments" }}
             />
           </>
         ) : (

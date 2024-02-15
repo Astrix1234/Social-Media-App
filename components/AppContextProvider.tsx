@@ -5,6 +5,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { Alert } from "react-native";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -41,11 +42,16 @@ import {
 } from "firebase/firestore";
 import * as Location from "expo-location";
 
-interface UserCredentials {
+export interface UserCredentials {
   email: string;
   login: string;
   password: string;
   imageUri?: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
 }
 
 export interface UserData {
@@ -77,6 +83,24 @@ export interface AllPosts {
   createdAt: Timestamp;
 }
 
+export interface UserComments {
+  id: string;
+  userId: string;
+  postId: string;
+  imageUri?: string;
+  comment: string;
+  createdAt: Timestamp;
+}
+
+export interface Comments {
+  id: string;
+  userId: string;
+  postId: string;
+  imageUri?: string;
+  comment: string;
+  createdAt: Timestamp;
+}
+
 export interface UserPostData {
   imageUri: string;
   title: string;
@@ -92,7 +116,7 @@ interface AppContextState {
   user: User | null;
   isLoading: boolean;
   registerUser: (credentials: UserCredentials) => Promise<User>;
-  loginUser: ({ email, password }: UserCredentials) => Promise<User>;
+  loginUser: ({ email, password }: LoginCredentials) => Promise<User>;
   logoutUser: () => Promise<void>;
   updateUserProfile: (update: UserProfile) => Promise<User | undefined>;
   uploadAndUpdateProfilePicture: (
@@ -108,6 +132,7 @@ interface AppContextState {
   userData: UserData[];
   userPosts: UserPosts[];
   allPosts: AllPosts[];
+  comments: Comments[];
   location: LocationData | null;
   setLocation: (latitude: number, longitude: number) => void;
   fetchAddress: (latitude: number, longitude: number) => Promise<string>;
@@ -119,6 +144,12 @@ interface AppContextState {
     location: string,
     likes: number,
     commentsNumber: number
+  ) => Promise<string>;
+  addComment: (
+    postId: string,
+    userId: string,
+    comment: string,
+    imageUri: string
   ) => Promise<string>;
   scrollPosition: number;
   setScrollPosition: (position: number) => void;
@@ -145,6 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [allPosts, setAllPosts] = useState<AllPosts[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [scrollPosition, setScrollPosition] = useState<number>(0);
+  const [comments, setComments] = useState<Comments[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -153,6 +185,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      setUserId(user.uid);
+      getAllPostsFirestore();
+      getUserPostsFirestore(user.uid);
+    }
+  }, [user]);
 
   const uploadImageAndGetUrl = async (
     imageUri: string,
@@ -269,16 +311,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const loginUser = async ({ email, password }: UserCredentials) => {
-    setIsLoading(true);
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    setIsLoading(false);
-    setUser(userCredential.user);
-    return userCredential.user;
+  const loginUser = async ({ email, password }: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      setIsLoading(false);
+      setUser(userCredential.user);
+      return userCredential.user;
+    } catch (error) {
+      let errorMessage = "Wrong email or password";
+      Alert.alert("Login Failed", errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logoutUser = async () => {
@@ -297,16 +347,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setUser({ ...user, ...update });
     return user;
   };
-
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user) {
-      setUserId(user.uid);
-      getAllPostsFirestore();
-      getUserPostsFirestore(user.uid);
-    }
-  }, [user]);
 
   const getAllPostsFirestore = async () => {
     setIsLoading(true);
@@ -343,6 +383,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(false);
     }
   };
+
+  const getAllCommentsFirestore = async () => {
+    setIsLoading(true);
+    try {
+      const allComments = [];
+      const postsSnapshot = await getDocs(collection(db, "AllPosts"));
+
+      for (const postDoc of postsSnapshot.docs) {
+        const postId = postDoc.id;
+        const commentsSnapshot = await getDocs(
+          collection(db, "AllPosts", postId, "Comments")
+        );
+
+        const comments = commentsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          postId,
+          ...doc.data(),
+        })) as unknown as UserComments[];
+
+        allComments.push(...comments);
+      }
+      setComments(allComments);
+    } catch (error) {
+      console.error("Error fetching all comments: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      getAllCommentsFirestore();
+    }
+  }, []);
 
   const toggleLikePost = async (postId: string, userId: string) => {
     const likeRefGlobal = doc(db, "AllPosts", postId, "Likes", userId);
@@ -383,7 +457,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
           `Adding post for user: ${userId} with imageUri: ${imageUri}`
         );
         photoURL = await uploadPostImageAndGetUrl(imageUri, userId);
-        console.log(`Uploaded image URL: ${photoURL}`);
+        // console.log(`Uploaded image URL: ${photoURL}`);
       }
 
       const globalPostsRef = collection(db, "AllPosts");
@@ -397,7 +471,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId: userId,
         createdAt: serverTimestamp(),
       });
-      console.log("Global Post added with ID:", PostGlobalRef.id);
+      // console.log("Global Post added with ID:", PostGlobalRef.id);
 
       await getAllPostsFirestore();
       await getUserPostsFirestore(userId);
@@ -405,6 +479,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       console.error("Error adding post:", error);
       throw new Error("Failed to add post");
+    }
+  };
+
+  const addComment = async (
+    postId: string,
+    userId: string,
+    comment: string,
+    imageUri: string
+  ): Promise<string> => {
+    try {
+      const globalCommentsRef = collection(db, "AllPosts", postId, "Comments");
+
+      const CommentGlobalRef = await addDoc(globalCommentsRef, {
+        imageUri,
+        comment,
+        userId: userId,
+        createdAt: serverTimestamp(),
+      });
+      console.log("Global Comment added with ID:", CommentGlobalRef.id);
+      await updateDoc(doc(db, "AllPosts", postId), {
+        commentsNumber: increment(1),
+      });
+      await getAllCommentsFirestore();
+      await getAllPostsFirestore();
+      await getUserPostsFirestore(userId);
+      return CommentGlobalRef.id;
+    } catch (error) {
+      console.error("Error comment:", error);
+      throw error;
     }
   };
 
@@ -491,9 +594,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId,
         toggleLikePost,
         addPostForUser,
+        addComment,
         userData,
         userPosts,
         allPosts,
+        comments,
         location,
         setLocation: updateLocation,
         fetchAddress,

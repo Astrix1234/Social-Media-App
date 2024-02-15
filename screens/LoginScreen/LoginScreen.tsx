@@ -49,9 +49,7 @@ export const LoginScreen = () => {
   const handleLogin = async (email: string, password: string) => {
     try {
       await loginUser({ email, password });
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) {}
   };
 
   return (

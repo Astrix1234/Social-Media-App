@@ -32,6 +32,14 @@ export const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  btnEditPhoto: {
+    position: "absolute",
+
+    left: "50%",
+    transform: [{ translateX: 65 }],
+    top: 10,
+    backgroundColor: "#FFF",
+  },
   title: {
     fontFamily: "Roboto-Medium",
     fontSize: 30,

@@ -12,11 +12,17 @@ import {
   Linking,
 } from "react-native";
 import { styles } from "./ProfileScreen.styles";
-import { AntDesign, FontAwesome, FontAwesome6 } from "@expo/vector-icons";
+import {
+  AntDesign,
+  FontAwesome,
+  FontAwesome6,
+  Feather,
+} from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useAppContext } from "../../components/AppContextProvider";
 import { RootStackParamList } from "../../components/AppNavigator";
+import * as ImagePicker from "expo-image-picker";
 
 type commentsScreenProp = StackNavigationProp<RootStackParamList, "Comments">;
 
@@ -30,6 +36,12 @@ export const ProfileScreen = () => {
     userId,
     scrollPosition,
     setScrollPosition,
+    uploadImageAndGetUrl,
+    uploadAndUpdateProfilePicture,
+    getDataFromFirestore,
+    deletePost,
+    getAllPostsFirestore,
+    getUserPostsFirestore,
   } = useAppContext();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -37,7 +49,7 @@ export const ProfileScreen = () => {
     setScrollPosition(event.nativeEvent.contentOffset.y);
   };
 
-  const handlePressDelete = () => {
+  const handlePressDelete = (postId: string) => {
     Alert.alert(
       "Confirmation",
       "Are you sure you want to delete?",
@@ -49,7 +61,17 @@ export const ProfileScreen = () => {
         },
         {
           text: "Delete",
-          onPress: () => console.log("Deleted"),
+          onPress: () => {
+            (async () => {
+              try {
+                await deletePost(postId);
+                await getAllPostsFirestore();
+                await getUserPostsFirestore(userId as string);
+              } catch (error) {
+                console.error("Error during deletion process:", error);
+              }
+            })();
+          },
           style: "destructive",
         },
       ],
@@ -78,6 +100,24 @@ export const ProfileScreen = () => {
     }
   };
 
+  const handleUpdateImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const photo = await uploadImageAndGetUrl(
+        result.assets[0].uri,
+        userId as string
+      );
+      await uploadAndUpdateProfilePicture(userId as string, photo);
+      await getDataFromFirestore();
+    }
+  };
+
   return (
     <ImageBackground
       source={require("../../assets/images/Photo BG.png")}
@@ -94,6 +134,12 @@ export const ProfileScreen = () => {
             <View style={styles.photoContainer}></View>
           )}
         </View>
+        <TouchableOpacity
+          style={styles.btnEditPhoto}
+          onPress={handleUpdateImage}
+        >
+          <Feather name="edit-2" size={24} color="#FF6C00" />
+        </TouchableOpacity>
         {userData.length > 0 ? (
           <Text style={styles.title}>{userData[0].login}</Text>
         ) : (
@@ -167,7 +213,7 @@ export const ProfileScreen = () => {
                       </View>
                       <TouchableOpacity
                         style={{ marginLeft: 26 }}
-                        onPress={handlePressDelete}
+                        onPress={() => handlePressDelete(post.id as string)}
                       >
                         <FontAwesome name="trash" size={24} color="#FF6C00" />
                       </TouchableOpacity>

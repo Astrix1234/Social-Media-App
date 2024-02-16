@@ -75,6 +75,8 @@ export interface UserPosts {
 export interface AllPosts {
   id: string;
   userId: string;
+  profilePicture: string;
+  login: string;
   imageUri: string;
   title: string;
   location: string;
@@ -128,8 +130,10 @@ interface AppContextState {
     imageUri: string,
     userId: string
   ) => Promise<string>;
+  getDataFromFirestore: () => Promise<void>;
   userId: string | null;
   userData: UserData[];
+  // setUserData: (data: UserData[]) => void;
   userPosts: UserPosts[];
   allPosts: AllPosts[];
   comments: Comments[];
@@ -137,9 +141,14 @@ interface AppContextState {
   setLocation: (latitude: number, longitude: number) => void;
   fetchAddress: (latitude: number, longitude: number) => Promise<string>;
   toggleLikePost: (postId: string, userId: string) => Promise<void>;
+  getAllPostsFirestore: () => Promise<void>;
+  getUserPostsFirestore: (userId: string) => Promise<void>;
+  getAllCommentsFirestore: () => Promise<void>;
   addPostForUser: (
     userId: string,
     imageUri: string,
+    profilePicture: string,
+    login: string,
     title: string,
     location: string,
     likes: number,
@@ -151,6 +160,8 @@ interface AppContextState {
     comment: string,
     imageUri: string
   ) => Promise<string>;
+  deletePost: (postId: string) => Promise<void>;
+  deleteComment: (postId: string, commentId: string) => Promise<void>;
   scrollPosition: number;
   setScrollPosition: (position: number) => void;
 }
@@ -236,36 +247,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       throw new Error("Error");
     }
   };
-
   const uploadAndUpdateProfilePicture = async (
     userId: string,
     imageUri: string
   ) => {
     setIsLoading(true);
 
-    const storage = getStorage();
-    const db = getFirestore();
-    const userStorageRef = storageRef(storage, `profilePictures/${userId}`);
-    const userDocRef = doc(db, "Users", userId);
-
     try {
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      const snapshot = await uploadBytes(userStorageRef, blob);
-      const photoURL = await getDownloadURL(snapshot.ref);
+      const db = getFirestore();
+      const userDocRef = doc(db, "Users", userId);
 
-      if (user) {
-        await updateProfile(user, { photoURL });
-      }
       await updateDoc(userDocRef, {
-        profilePicture: photoURL,
+        profilePicture: imageUri,
       });
-
-      if (user) {
-        setUser({ ...user, photoURL } as User);
-      }
     } catch (error) {
-      console.error(error);
+      console.error("Error updating profile picture URL in Firestore:", error);
     } finally {
       setIsLoading(false);
     }
@@ -348,6 +344,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     return user;
   };
 
+  const getDataFromFirestore = async () => {
+    setIsLoading(true);
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      setUserData([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const snapshot = await getDocs(
+        query(collection(db, "Users"), where("userId", "==", uid))
+      );
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as UserData[];
+      // console.log("Data from Firestore: ", data);
+      setUserData(data);
+    } catch (error) {
+      console.error("Error fetching data: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      getDataFromFirestore();
+    }
+  }, [user]);
+
   const getAllPostsFirestore = async () => {
     setIsLoading(true);
     try {
@@ -416,7 +444,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     if (user) {
       getAllCommentsFirestore();
     }
-  }, []);
+  }, [user]);
 
   const toggleLikePost = async (postId: string, userId: string) => {
     const likeRefGlobal = doc(db, "AllPosts", postId, "Likes", userId);
@@ -445,6 +473,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const addPostForUser = async (
     userId: string,
     imageUri: string,
+    profilePicture: string,
+    login: string,
     title: string,
     location: string,
     likes: number,
@@ -453,9 +483,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     try {
       let photoURL = "";
       if (imageUri) {
-        console.log(
-          `Adding post for user: ${userId} with imageUri: ${imageUri}`
-        );
         photoURL = await uploadPostImageAndGetUrl(imageUri, userId);
         // console.log(`Uploaded image URL: ${photoURL}`);
       }
@@ -464,6 +491,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
 
       const PostGlobalRef = await addDoc(globalPostsRef, {
         imageUri: photoURL,
+        profilePicture,
+        login,
         title,
         location,
         likes,
@@ -497,7 +526,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId: userId,
         createdAt: serverTimestamp(),
       });
-      console.log("Global Comment added with ID:", CommentGlobalRef.id);
       await updateDoc(doc(db, "AllPosts", postId), {
         commentsNumber: increment(1),
       });
@@ -511,36 +539,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    const getDataFromFirestore = async () => {
-      setIsLoading(true);
-      const uid = auth.currentUser?.uid;
-      if (!uid) {
-        setUserData([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const snapshot = await getDocs(
-          query(collection(db, "Users"), where("userId", "==", uid))
-        );
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as UserData[];
-        // console.log("Data from Firestore: ", data);
-        setUserData(data);
-      } catch (error) {
-        console.error("Error fetching data: ", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (user) {
-      getDataFromFirestore();
+  const deleteCommentsForPost = async (postId: string) => {
+    try {
+      const commentsRef = collection(db, "AllPosts", postId, "Comments");
+      const snapshot = await getDocs(commentsRef);
+      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error("Error deleting comments for post", postId, ":", error);
+      throw new Error("Failed to delete comments.");
     }
-  }, [user]);
+  };
+
+  const deleteComment = async (postId: string, commentId: string) => {
+    try {
+      const commentRef = doc(db, "AllPosts", postId, "Comments", commentId);
+      await deleteDoc(commentRef);
+      await updateDoc(doc(db, "AllPosts", postId), {
+        commentsNumber: increment(-1),
+      });
+      await getAllPostsFirestore();
+      await getUserPostsFirestore(userId);
+      console.log("Comment deleted successfully", commentId);
+    } catch (error) {
+      console.error("Error deleting comment", commentId, ":", error);
+      throw new Error("Failed to delete comment.");
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    try {
+      await deleteCommentsForPost(postId);
+      await deleteDoc(doc(db, "AllPosts", postId));
+    } catch (error) {
+      console.error("Error deleting post", postId, ":", error);
+      throw new Error("Failed to delete post.");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -591,10 +626,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         uploadImageAndGetUrl,
         uploadPostImageAndGetUrl,
         uploadAndUpdateProfilePicture,
+        getDataFromFirestore,
+        getAllPostsFirestore,
+        getUserPostsFirestore,
+        getAllCommentsFirestore,
         userId,
         toggleLikePost,
         addPostForUser,
         addComment,
+        deletePost,
+        deleteComment,
         userData,
         userPosts,
         allPosts,

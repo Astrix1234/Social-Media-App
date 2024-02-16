@@ -32,7 +32,8 @@ export const CreatePostsScreen = () => {
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const cameraRef = useRef<Camera>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const { location, fetchAddress, addPostForUser, userId } = useAppContext();
+  const { location, fetchAddress, addPostForUser, userId, userData } =
+    useAppContext();
 
   if (!userId) {
     return <Loader />;
@@ -56,6 +57,8 @@ export const CreatePostsScreen = () => {
   const formik = useFormik({
     initialValues: {
       photo: "",
+      profilePicture: userData[0]?.profilePicture || "",
+      login: userData[0].login,
       title: "",
       location: "",
       likes: 0,
@@ -64,9 +67,12 @@ export const CreatePostsScreen = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       if (typeof userId === "string") {
+        console.log(values);
         handlePublishPost(
           userId,
           values.photo,
+          values.profilePicture,
+          values.login,
           values.title,
           values.location,
           values.likes,
@@ -148,6 +154,8 @@ export const CreatePostsScreen = () => {
   const handlePublishPost = async (
     userId: string | null,
     imageUri: string,
+    profilePicture: string,
+    login: string,
     title: string,
     location: string,
     likes: number,
@@ -161,6 +169,8 @@ export const CreatePostsScreen = () => {
       await addPostForUser(
         userId,
         imageUri,
+        profilePicture,
+        login,
         title,
         location,
         likes,

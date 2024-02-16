@@ -47,6 +47,9 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  disabledButton: {
+    backgroundColor: "#BDBDBD",
+  },
   commentContainer: {
     display: "flex",
     flexDirection: "row",
@@ -81,6 +84,18 @@ export const styles = StyleSheet.create({
     fontFamily: "Roboto-Regular",
     lineHeight: 18,
     fontSize: 13,
+  },
+  containerEdit: {
+    display: "flex",
+    flexDirection: "row-reverse",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginTop: 5,
+  },
+  containerEditIcons: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "flex-end",
   },
   time: {
     color: "#BDBDBD",

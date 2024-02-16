@@ -41,10 +41,38 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     color: "#212121",
   },
+  createdPost: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+  userPost: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "flex-end",
+  },
+  imageProfileContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#BDBDBD",
+    overflow: "hidden",
+  },
+  imageProfile: {
+    width: "100%",
+    height: "100%",
+  },
+  userLogin: {
+    fontFamily: "Roboto-Regular",
+    color: "#212121",
+    fontSize: 16,
+    marginLeft: 8,
+  },
   createdAt: {
     fontFamily: "Roboto-Regular",
     color: "#212121",
-    marginBottom: 5,
   },
   imageContainer: {
     width: "100%",
@@ -61,7 +89,7 @@ export const styles = StyleSheet.create({
   postTitle: {
     fontFamily: "Roboto-Medium",
     color: "#212121",
-    fontSize: 16,
+    fontSize: 18,
   },
   linksContainer: {
     display: "flex",

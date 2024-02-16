@@ -32,6 +32,9 @@ export const PostsScreen = () => {
     userId,
     scrollPosition,
     setScrollPosition,
+    deletePost,
+    getAllPostsFirestore,
+    getUserPostsFirestore,
   } = useAppContext();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -57,7 +60,7 @@ export const PostsScreen = () => {
     }
   };
 
-  const handlePressDelete = () => {
+  const handlePressDelete = (postId: string) => {
     Alert.alert(
       "Confirmation",
       "Are you sure you want to delete?",
@@ -69,7 +72,17 @@ export const PostsScreen = () => {
         },
         {
           text: "Delete",
-          onPress: () => console.log("Deleted"),
+          onPress: () => {
+            (async () => {
+              try {
+                await deletePost(postId);
+                await getAllPostsFirestore();
+                await getUserPostsFirestore(userId as string);
+              } catch (error) {
+                console.error("Error during deletion process:", error);
+              }
+            })();
+          },
           style: "destructive",
         },
       ],
@@ -152,13 +165,24 @@ export const PostsScreen = () => {
             )
             .map((post) => (
               <View key={post.id}>
-                <Text style={styles.createdAt}>
-                  {post.createdAt.toDate().toLocaleDateString("pl-PL", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </Text>
+                <View style={styles.createdPost}>
+                  <View style={styles.userPost}>
+                    <View style={styles.imageProfileContainer}>
+                      <Image
+                        source={{ uri: post.profilePicture }}
+                        style={styles.imageProfile}
+                      />
+                    </View>
+                    <Text style={styles.userLogin}>{post.login}</Text>
+                  </View>
+                  <Text style={styles.createdAt}>
+                    {post.createdAt.toDate().toLocaleDateString("pl-PL", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </View>
                 <View style={styles.imageContainer}>
                   <Image
                     source={{ uri: post.imageUri }}
@@ -170,11 +194,11 @@ export const PostsScreen = () => {
                   <View style={styles.comLikiesContainer}>
                     <View style={styles.comContainer}>
                       <TouchableOpacity
-                        onPress={() =>
+                        onPress={() => {
                           navigationComments.navigate("Comments", {
                             postId: post.id,
-                          })
-                        }
+                          });
+                        }}
                       >
                         <FontAwesome name="comment" size={24} color="#FF6C00" />
                       </TouchableOpacity>
@@ -193,7 +217,7 @@ export const PostsScreen = () => {
                     {userId === post.userId && (
                       <TouchableOpacity
                         style={{ marginLeft: 26 }}
-                        onPress={handlePressDelete}
+                        onPress={() => handlePressDelete(post.id as string)}
                       >
                         <FontAwesome name="trash" size={24} color="#FF6C00" />
                       </TouchableOpacity>

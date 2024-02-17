@@ -67,7 +67,6 @@ export const CreatePostsScreen = () => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       if (typeof userId === "string") {
-        console.log(values);
         handlePublishPost(
           userId,
           values.photo,
@@ -78,7 +77,6 @@ export const CreatePostsScreen = () => {
           values.likes,
           values.commentsNumber
         );
-        // console.log("Post published", values);
         handleClear();
         navigation.goBack();
       }
@@ -176,7 +174,6 @@ export const CreatePostsScreen = () => {
         likes,
         commentsNumber
       );
-      // console.log("Post published");
     } catch (error) {
       console.error(error);
     }

@@ -1,10 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Alert } from "react-native";
 import {
   createUserWithEmailAndPassword,
@@ -296,7 +291,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         createdAt: new Date(),
         userId: userId,
       });
-
+      await getDataFromFirestore();
       setUser(userCredential.user);
       return userCredential.user;
     } catch (error) {
@@ -316,6 +311,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         password
       );
       setIsLoading(false);
+      await getDataFromFirestore();
       setUser(userCredential.user);
       return userCredential.user;
     } catch (error) {
@@ -361,7 +357,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         id: doc.id,
         ...doc.data(),
       })) as UserData[];
-      // console.log("Data from Firestore: ", data);
       setUserData(data);
     } catch (error) {
       console.error("Error fetching data: ", error);
@@ -384,7 +379,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         id: doc.id,
         ...doc.data(),
       })) as AllPosts[];
-      // console.log("All posts: ", posts);
       setAllPosts(posts);
     } catch (error) {
       console.error("Error fetching all posts: ", error);
@@ -403,7 +397,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         id: doc.id,
         ...doc.data(),
       })) as UserPosts[];
-      // console.log("User posts: ", posts);
       setUserPosts(posts);
     } catch (error) {
       console.error("Error fetching user posts: ", error);
@@ -484,7 +477,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       let photoURL = "";
       if (imageUri) {
         photoURL = await uploadPostImageAndGetUrl(imageUri, userId);
-        // console.log(`Uploaded image URL: ${photoURL}`);
       }
 
       const globalPostsRef = collection(db, "AllPosts");
@@ -500,7 +492,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         userId: userId,
         createdAt: serverTimestamp(),
       });
-      // console.log("Global Post added with ID:", PostGlobalRef.id);
 
       await getAllPostsFirestore();
       await getUserPostsFirestore(userId);
@@ -560,7 +551,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       });
       await getAllPostsFirestore();
       await getUserPostsFirestore(userId);
-      console.log("Comment deleted successfully", commentId);
     } catch (error) {
       console.error("Error deleting comment", commentId, ":", error);
       throw new Error("Failed to delete comment.");

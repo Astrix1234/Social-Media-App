@@ -8,9 +8,11 @@ Welcome to the Social Media App – an innovative social platform that enables u
   <img src="./screenshots/Screenshot_3_Social-Media-App.jpg" width="30%" />
 </p>
 <br/>
+<p align="center">
   <img src="./screenshots/Screenshot_4_Social-Media-App.jpg" width="30%" />
   <img src="./screenshots/Screenshot_5_Social-Media-App.jpg" width="30%" />
   <img src="./screenshots/Screenshot_6_Social-Media-App.jpg" width="30%" />
+</p>
 
 ## Key Features
 
